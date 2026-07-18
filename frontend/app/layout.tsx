@@ -4,7 +4,6 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'じぶん時間ラボ',
   description: '今日を、ここに置いていく。',
-  appleWebApp: { capable: true, title: 'じぶん時間ラボ', statusBarStyle: 'default' },
 };
 
 export const viewport: Viewport = {
@@ -14,6 +13,7 @@ export const viewport: Viewport = {
   themeColor: '#F6F1E6',
 };
 
+// 全画面共通の枠。スマホ幅に固定するだけ。
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ja">

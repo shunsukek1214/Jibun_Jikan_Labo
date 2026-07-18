@@ -1,23 +1,26 @@
 import Link from 'next/link';
-import { googleAuthUrl } from '../lib/api';
-import { GoogleIcon } from '../components/icons';
+import { GoogleIcon } from '../components';
 
-/** ログイン（入口）。Google OAuth へは FastAPI /auth/google/start 経由（図4/5）。 */
+// ============================================
+// ① ログイン画面（Figma 1枚目）
+// 「Googleではじめる」→ いまは夜の画面へ。
+// 本物のGoogleログインは、バックの /auth/google/start ができたら
+// href をそこに差し替えるだけ。
+// ============================================
 export default function LoginPage() {
   return (
-    <main className="splash">
+    <main className="login">
+      {/* 時計の輪ロゴ */}
       <div className="ring"><div className="hands" /></div>
-      <h1>じぶん時間ラボ</h1>
-      <div className="catch">今日を、ここに置いていく。</div>
 
-      <a className="cta" href={googleAuthUrl}>
+      <h1>じぶん時間ラボ</h1>
+      <p className="catch">今日を、ここに置いていく。</p>
+
+      <Link href="/night" className="google-btn">
         <GoogleIcon />
         Googleではじめる
-      </a>
-      <p className="sub-note">Googleカレンダーと連携します</p>
-
-      {/* バック未接続でもチームが触れるように */}
-      <Link className="demo-link" href="/now">まずはさわってみる →</Link>
+      </Link>
+      <p className="login-note">Googleカレンダーと連携してログイン</p>
     </main>
   );
 }
