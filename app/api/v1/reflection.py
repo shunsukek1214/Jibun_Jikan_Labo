@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import tempfile
 from datetime import date
 from typing import Optional
@@ -19,6 +20,22 @@ from app.services.speech_service import SpeechService, SpeechToTextError, get_sp
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def _get_suffix(audio_file: UploadFile) -> str:
+  """アップロードされた音声ファイルの拡張子を推定する（既定はwebm）"""
+  if audio_file.filename:
+    ext = os.path.splitext(audio_file.filename)[1]
+    if ext:
+      return ext
+  content_type_map = {
+    "audio/webm": ".webm",
+    "audio/wav": ".wav",
+    "audio/ogg": ".ogg",
+    "audio/mp4": ".mp4",
+    "audio/mpeg": ".mp3",
+  }
+  return content_type_map.get(audio_file.content_type, ".webm")
 
 
 @router.post("/reflection", response_model=ReflectionResponse)
@@ -51,7 +68,8 @@ async def create_reflection(
     transcribed_text = raw_text
 
     if audio_file is not None:
-        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+        suffix = _get_suffix(audio_file)
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
             content = await audio_file.read()
             tmp.write(content)
             tmp_path = tmp.name
@@ -60,7 +78,6 @@ async def create_reflection(
         except SpeechToTextError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         finally:
-            import os
             try:
                 os.unlink(tmp_path)
             except OSError:
