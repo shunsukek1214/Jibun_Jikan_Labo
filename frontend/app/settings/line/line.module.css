@@ -1,0 +1,118 @@
+.page {
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  background: #f6f1e6;
+}
+
+.card {
+  width: 100%;
+  max-width: 420px;
+  padding: 32px 24px;
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 16px 40px rgb(0 0 0 / 8%);
+}
+
+.label {
+  margin: 0 0 8px;
+  color: #7a7469;
+  font-size: 13px;
+}
+
+.title {
+  margin: 0;
+  color: #25231f;
+  font-size: 28px;
+}
+
+.description {
+  margin: 16px 0 24px;
+  color: #625e56;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.statusBox {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border-radius: 14px;
+  background: #f4f7f4;
+}
+
+.statusBox span {
+  color: #77736c;
+  font-size: 12px;
+}
+
+.statusBox strong {
+  color: #315747;
+  font-size: 16px;
+}
+
+.statusBox small {
+  color: #77736c;
+}
+
+.message {
+  margin: 0 0 16px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #fff8de;
+  color: #655720;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.lineButton {
+  width: 100%;
+  min-height: 52px;
+  border: 0;
+  border-radius: 14px;
+  background: #06c755;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lineButton:hover {
+  opacity: 0.9;
+}
+
+.refreshButton {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 12px;
+  border: 1px solid #cfcac0;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #555149;
+  cursor: pointer;
+}
+
+.refreshButton:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.backLink {
+  display: block;
+  margin-top: 20px;
+  color: #655f55;
+  font-size: 14px;
+  text-align: center;
+  text-decoration: underline;
+}
+
+.testNote {
+  margin: 20px 0 0;
+  color: #9a958c;
+  font-size: 11px;
+  text-align: center;
+}
