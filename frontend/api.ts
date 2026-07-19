@@ -32,3 +32,15 @@ export async function sendUtterance(audio: Blob) {
 // 提案を採用   → POST /schedule-changes/approve （RFP図5）
 // タスク完了   → POST /tasks/{id}/complete （RFP図6）
 // --------------------------------------------
+
+/** 結合テスト用：まさのreflect2から挨拶をもらう。届かなければnull（画面は元の文字のまま） */
+export async function getReflect2(): Promise<string | null> {
+  try {
+    const res = await fetch(`${API}/reflect2`); // ←パスは/docsで確認して合わせる
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.message ?? null;
+  } catch {
+    return null;
+  }
+}
