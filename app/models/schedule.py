@@ -19,3 +19,4 @@ class Schedule(Base):
     raw_text = Column(Text, nullable=False)  # 音声を文字起こししたテキスト
     summary = Column(Text, nullable=True)  # Azure OpenAIがまとめた予定概要（JSON文字列想定）
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime,server_default=func.now(), onupdate=func.now(),nullable=False,)

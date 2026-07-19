@@ -1,5 +1,7 @@
+from collections.abc import Generator
+
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import Session, sessionmaker, declarative_base
 
 from app.core.config import get_settings
 
@@ -23,6 +25,6 @@ else:
         pool_recycle=3600,
     )
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, expire_on_commit=False,)
 
 Base = declarative_base()
