@@ -1,5 +1,5 @@
-import Link from 'next/link';
-import { GoogleIcon } from '../components';
+import Link from "next/link";
+import { GoogleIcon } from "../components";
 
 // ============================================
 // ① ログイン画面（Figma 1枚目）
@@ -11,7 +11,9 @@ export default function LoginPage() {
   return (
     <main className="login">
       {/* 時計の輪ロゴ */}
-      <div className="ring"><div className="hands" /></div>
+      <div className="ring">
+        <div className="hands" />
+      </div>
 
       <h1>じぶん時間ラボ</h1>
       <p className="catch">今日を、ここに置いていく。</p>
@@ -21,6 +23,21 @@ export default function LoginPage() {
         Googleではじめる
       </Link>
       <p className="login-note">Googleカレンダーと連携してログイン</p>
+      {process.env.NEXT_PUBLIC_ENABLE_LINE_TEST === "true" && (
+        <Link
+          href="/settings/line"
+          style={{
+            display: "block",
+            marginTop: "24px",
+            color: "#315747",
+            fontSize: "14px",
+            textAlign: "center",
+            textDecoration: "underline",
+          }}
+        >
+          LINE通知を設定する（開発用）
+        </Link>
+      )}
     </main>
   );
 }
