@@ -33,4 +33,4 @@ async def create_reflection(
 
   実際の処理は行わず、固定のJSONメッセージのみを返す。
   """
-  return {"message": "おつかれさまでした"}
+  return {"message": "おつかれさまでした。今日も１日頑張りましょう。"}
