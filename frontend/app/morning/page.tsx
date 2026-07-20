@@ -1,11 +1,16 @@
 import Link from 'next/link';
-import { Footer, HeaderIcons, MicIcon, MoonIcon } from '../../components';
+import { Footer, HeaderIcons, MoonIcon } from '../../components';
 
 // ============================================
-// ⑤ 朝の画面（Figma 5枚目）
-// 今日の予定 ＋ ひとことアドバイス ＋ マイク ＋「これで決まり！」
+// ⑤ 朝の画面（Figma準拠・2026-07-20 UI変更版）
+// 今日の予定 ＋ ひとことアドバイス ＋「きょうもがんばる！」
 // 🌙マーク ＝ 昨夜の言葉から生まれた予定
-// 予定の中身を変えたいときは、下の rows を書き換えるだけ。
+//
+// 変更メモ：
+// ・朝の音声入力（ひとこと→提案）はMVP対象外にした。
+//   /morning/talk へのリンクを外しただけで、画面ファイル自体は
+//   残してある（将来復活させるときはリンクを戻すだけ）。
+// ・予定の中身を変えたいときは、下の rows を書き換えるだけ。
 // ============================================
 
 const rows = [
@@ -41,14 +46,8 @@ export default function MorningPage() {
         {/* 秘書のひとこと */}
         <p className="advice">きょうは会議が続く日。集中して作業できるのは、朝のうちだけです。</p>
 
-        {/* ひとこと言いたい人はこちら → 提案画面へ */}
-        <Link href="/morning/talk" className="mic-pill">
-          <span className="mic-circle"><MicIcon size={15} color="#fff" /></span>
-          きょうどのように過ごしたいですか？
-        </Link>
-
-        {/* そのままでいい人はこちら → 送り出し */}
-        <Link href="/sendoff" className="big-btn">これで決まり！</Link>
+        {/* 今日へ向かう → 送り出し */}
+        <Link href="/sendoff" className="big-btn">きょうもがんばる！</Link>
       </main>
       <Footer />
     </>
