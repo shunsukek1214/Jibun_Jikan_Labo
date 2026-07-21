@@ -67,11 +67,12 @@ export const GoogleIcon = () => (
   </svg>
 );
 
-// ---- ヘッダー右上の（記録・設定）ボタン ※画面はまだ無いので飾り ----
+// ---- ヘッダー右上の（記録・設定）ボタン ----
+// 歯車は設定画面（/settings）へ。記録の画面はまだ無いので飾り。
 export const HeaderIcons = () => (
   <div className="hicons">
     <span className="hicon"><HistoryIcon /></span>
-    <span className="hicon"><GearIcon /></span>
+    <Link href="/settings" className="hicon" aria-label="設定"><GearIcon /></Link>
   </div>
 );
 
