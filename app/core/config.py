@@ -39,6 +39,11 @@ class Settings(BaseSettings):
     frontend_line_result_url: str = "http://localhost:3000/settings/line"
     frontend_today_url: str
 
+    # Googleクライアント
+    google_client_id: str
+    google_client_secret: str 
+    google_redirect_uri: str
+
     # Googleカレンダーの日表示URL
     google_calendar_url: str = (
         "https://calendar.google.com/calendar/u/0/r/day"
