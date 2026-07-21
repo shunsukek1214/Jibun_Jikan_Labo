@@ -3,38 +3,53 @@
 "use strict";
 
 __turbopack_context__.s([
+    "getReflect2",
+    ()=>getReflect2,
     "sendUtterance",
     ()=>sendUtterance
 ]);
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$polyfills$2f$process$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__ = /*#__PURE__*/ __turbopack_context__.i("[project]/node_modules/next/dist/build/polyfills/process.js [app-client] (ecmascript)");
 // ============================================
 // バックエンド（FastAPI）を呼ぶところ。この1ファイルだけ。
-// まさが実装済みのAPIに合わせて、いまは1本だけ繋いでいる。
+// まさのSwagger（/docs）準拠。
 // ============================================
-// 接続先。ローカル開発では http://localhost:8000（frontend/.env.local で変更できる）
 const API = ("TURBOPACK compile-time value", "http://localhost:8000") ?? 'http://localhost:8000';
+const dateStr = (d)=>d.toISOString().slice(0, 10);
+const today = ()=>dateStr(new Date());
+const tomorrow = ()=>dateStr(new Date(Date.now() + 24 * 60 * 60 * 1000));
 async function sendUtterance(audio) {
     try {
         const fd = new FormData();
-        fd.append('user_id', '1'); // TODO: ログインができたら本物のIDにする
-        fd.append('audio', audio, 'utterance.webm');
-        await fetch(`${API}/createTomorrowSchedule`, {
+        fd.append('user_id', '1');
+        fd.append('target_date', tomorrow());
+        fd.append('audio_file', audio, 'utterance.webm');
+        const res = await fetch(`${API}/api/v1/createTomorrowSchedule`, {
             method: 'POST',
             body: fd
         });
-        console.log('音声を送信しました');
+        console.log('createTomorrowSchedule:', res.status);
     } catch (e) {
         console.log('バックエンド未接続（あとで繋がればOK）', e);
     }
-} // --------------------------------------------
- // TODO: 次に繋ぐ候補（バックの実装が揃ったら足す）
- //
- // 朝のひとこと → POST /reflection （RFP図5）
- // export async function sendReflection(text: string) { ... }
- //
- // 提案を採用   → POST /schedule-changes/approve （RFP図5）
- // タスク完了   → POST /tasks/{id}/complete （RFP図6）
- // --------------------------------------------
+}
+async function getReflect2() {
+    try {
+        const fd = new FormData();
+        fd.append('user_id', '1');
+        fd.append('reflection_date', today());
+        fd.append('proposal_date', today());
+        const res = await fetch(`${API}/api/v1/reflection2`, {
+            method: 'POST',
+            body: fd
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (typeof data === 'string') return data;
+        return data?.message ?? null;
+    } catch  {
+        return null;
+    }
+}
 if (typeof globalThis.$RefreshHelpers$ === 'object' && globalThis.$RefreshHelpers !== null) {
     __turbopack_context__.k.registerExports(__turbopack_context__.m, globalThis.$RefreshHelpers$);
 }
