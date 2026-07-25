@@ -4,17 +4,18 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ApiError, sendUtterance } from "../../api";
+import { BackButton } from '../../back-button';
 
 // ============================================
-// ③ きいている画面（Figma 3枚目）
-// 開いた瞬間から録音がはじまる。■で止めると
-// 音声をバックエンドへ送って「おわり」へ進む。
+// ③ きいている画面（エラー振り分け対応版）
+// 置き場所: frontend/app/listening/page.tsx（丸ごと置き換え）
 //
-// 録音のしくみ（2ステップだけ）:
-//   1. getUserMedia でマイクを借りる（許可ダイアログが出る）
-//   2. MediaRecorder で録音 → 止めると音声ファイル(Blob)になる
-// 画面に出ている3行はFigmaと同じ見本の文字（演出）。
-// 本物の文字起こしはバックエンド（Azure Speech）の仕事。
+// こせっちの実装（await送信・401はログインへ）はそのまま生かして、
+// 失敗の種類ごとに専用のエラー画面 /night/error へ振り分ける:
+//   ・マイク拒否            → /night/error?reason=mic
+//   ・422（聞き取れず）      → /night/error?reason=unheard
+//   ・その他の失敗（電波等）  → /night/error?reason=offline
+//   ・401（セッション切れ）   → /?auth_error=session_expired（従来どおり）
 // ============================================
 
 export default function ListeningPage() {
@@ -23,6 +24,7 @@ export default function ListeningPage() {
   const chunksRef = useRef<Blob[]>([]);
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState("");
+
   // 画面が開いたら録音スタート
   useEffect(() => {
     navigator.mediaDevices
@@ -36,17 +38,15 @@ export default function ListeningPage() {
         recorderRef.current = recorder;
       })
       .catch(() => {
-        // マイクを許可されなくても画面はそのまま動く
-        setMessage(
-          "マイクを使用できません。ブラウザの許可設定を確認してください。",
-        );
+        // マイクを許可してもらえなかった → 専用画面で案内する
+        router.push("/night/error?reason=mic");
       });
 
     // 画面を離れるときはマイクを返す
     return () => {
       recorderRef.current?.stream.getTracks().forEach((track) => track.stop());
     };
-  }, []);
+  }, [router]);
 
   // ■ボタン：録音を止めて、音声を送って、おわりへ
   const finish = () => {
@@ -58,26 +58,30 @@ export default function ListeningPage() {
     }
 
     setSending(true);
-    setMessage("予定を保存しています。");
+    setMessage("あずかっています…");
 
     recorder.onstop = async () => {
       const audio = new Blob(chunksRef.current, { type: "audio/webm" });
       recorder.stream.getTracks().forEach((track) => track.stop());
 
       try {
-        await sendUtterance(audio); // バックエンドへ（未接続でも止まらない）
+        await sendUtterance(audio);
         router.push("/done");
       } catch (error) {
-        setSending(false);
-
         if (error instanceof ApiError && error.status === 401) {
+          // セッション切れ → ログインからやり直し（こせっち実装のまま）
           window.location.assign("/?auth_error=session_expired");
           return;
         }
 
-        setMessage(
-          "予定を保存できませんでした。FastAPIのログを確認してください。",
-        );
+        if (error instanceof ApiError && error.status === 422) {
+          // バックの「音声を認識できませんでした」→ 聞き取れなかった画面へ
+          router.push("/night/error?reason=unheard");
+          return;
+        }
+
+        // それ以外（電波が無い・サーバー不調・500など）
+        router.push("/night/error?reason=offline");
       }
     };
 
@@ -111,6 +115,7 @@ export default function ListeningPage() {
       >
         <i />
       </button>
+      <BackButton to="/start" dark />
     </main>
   );
 }

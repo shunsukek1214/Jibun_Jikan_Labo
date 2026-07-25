@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Footer, MicIcon } from '../../components';
+import { Clock } from '../../clock';
 
 // ============================================
 // ② 夜の画面（Figma 2枚目）
@@ -14,7 +15,7 @@ export default function NightPage() {
 
         <div className="night-center">
           <p className="night-greet">おつかれさまでした</p>
-          <p className="night-date">7/15 TUE ・ 18:34</p>
+          <p className="night-date"><Clock /></p>
 
           <Link href="/listening" className="mic-btn" aria-label="話す">
             <MicIcon />
