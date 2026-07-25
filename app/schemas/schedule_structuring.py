@@ -21,7 +21,7 @@ class ScheduleStructuringRequest(BaseModel):
     ここではテキスト直接入力にも対応できるようoptionalにしている。
     """
 
-    user_id: int
+    ##user_id: int　セッションからユーザーを特定するためuser_idは不要
     target_date: date
     raw_text: Optional[str] = Field(
         default=None, description="音声を使わずテキストで直接入力する場合"

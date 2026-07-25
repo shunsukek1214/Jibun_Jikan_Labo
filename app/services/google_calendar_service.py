@@ -1,106 +1,298 @@
-import datetime
-import logging
-from typing import Optional
+from datetime import date, datetime, time, timedelta, timezone
+from typing import Any, Callable
+from zoneinfo import ZoneInfo
 
-from google_auth_oauthlib.flow import Flow
+from google.auth.exceptions import RefreshError
+from google.auth.transport.requests import Request as GoogleRequest
+from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
-from app.core.config import get_settings
+from app.core.config import settings
+from app.core.security import (
+    TokenDecryptionError,
+    decrypt_token,
+    encrypt_token,
+)
+from app.models.google_account import GoogleAccount
+from app.services.google_oauth_service import (
+    GOOGLE_SCOPES,
+    GOOGLE_TOKEN_ENDPOINT,
+)
 
-logger = logging.getLogger(__name__)
 
-SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
-
-# 開発用の簡易フローストア（本番ではセッション/DBに紐付ける想定）
-_flow_store: dict[str, Flow] = {}
+class GoogleCalendarError(RuntimeError):
+    """Google Calendar APIの一般エラーです。"""
 
 
-class GoogleCalendarServiceError(Exception):
-  """Googleカレンダー連携に関するエラー"""
+class GoogleCalendarNotConnectedError(GoogleCalendarError):
+    """Google連携情報がない場合です。"""
 
 
-def _build_client_config() -> dict:
-  settings = get_settings()
-  return {
-    "web": {
-      "client_id": settings.google_client_id,
-      "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-      "token_uri": "https://oauth2.googleapis.com/token",
-      "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-      "client_secret": settings.google_client_secret,
-      "redirect_uris": [settings.google_redirect_uri],
+class GoogleReauthorizationRequiredError(GoogleCalendarError):
+    """権限取消やrefresh_token失効により再認可が必要な場合です。"""
+
+
+class GoogleCalendarPermissionError(GoogleCalendarError):
+    """スコープ不足または書込権限不足の場合です。"""
+
+
+def _as_utc_aware(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _load_account(db: Session, user_id: int) -> GoogleAccount:
+    account = db.scalar(
+        select(GoogleAccount).where(GoogleAccount.user_id == user_id)
+    )
+    if account is None:
+        raise GoogleCalendarNotConnectedError(
+            "Googleカレンダーが連携されていません。"
+        )
+    return account
+
+
+def _build_credentials(account: GoogleAccount) -> Credentials:
+    try:
+        access_token = decrypt_token(account.access_token)
+        refresh_token = decrypt_token(account.refresh_token)
+    except TokenDecryptionError as exc:
+        raise GoogleReauthorizationRequiredError(
+            "Googleトークンを復号できません。再ログインしてください。"
+        ) from exc
+
+    if not access_token:
+        raise GoogleReauthorizationRequiredError(
+            "Googleアクセストークンがありません。"
+        )
+
+    scopes = account.scope.split() if account.scope else GOOGLE_SCOPES
+
+    return Credentials(
+        token=access_token,
+        refresh_token=refresh_token,
+        token_uri=GOOGLE_TOKEN_ENDPOINT,
+        client_id=settings.google_client_id,
+        client_secret=settings.google_client_secret,
+        scopes=scopes,
+        expiry=_as_utc_aware(account.expires_at),
+    )
+
+
+def _save_refreshed_credentials(
+    db: Session,
+    account: GoogleAccount,
+    credentials: Credentials,
+) -> None:
+    """更新されたトークンと有効期限だけをDBへ反映します。"""
+    changed = False
+
+    if credentials.token and decrypt_token(account.access_token) != credentials.token:
+        account.access_token = encrypt_token(credentials.token) or ""
+        changed = True
+
+    if (
+        credentials.refresh_token
+        and decrypt_token(account.refresh_token) != credentials.refresh_token
+    ):
+        account.refresh_token = encrypt_token(credentials.refresh_token)
+        changed = True
+
+    if credentials.expiry:
+        expiry_naive = credentials.expiry.astimezone(timezone.utc).replace(tzinfo=None)
+        if account.expires_at != expiry_naive:
+            account.expires_at = expiry_naive
+            changed = True
+
+    if changed:
+        db.commit()
+
+
+def _refresh_credentials(
+    db: Session,
+    account: GoogleAccount,
+    credentials: Credentials,
+) -> None:
+    if not credentials.refresh_token:
+        raise GoogleReauthorizationRequiredError(
+            "refresh_tokenがありません。Googleへ再同意してください。"
+        )
+
+    try:
+        credentials.refresh(GoogleRequest())
+    except RefreshError as exc:
+        raise GoogleReauthorizationRequiredError(
+            "Googleの認可が失効しています。再ログインしてください。"
+        ) from exc
+
+    _save_refreshed_credentials(db, account, credentials)
+
+
+def get_valid_credentials(
+    db: Session,
+    user_id: int,
+) -> tuple[GoogleAccount, Credentials]:
+    """期限を確認し、必要ならrefresh_tokenで自動更新します。"""
+
+    account = _load_account(db, user_id)
+    credentials = _build_credentials(account)
+
+    # 通信中の期限切れを避けるため60秒前から更新します。
+    if credentials.expiry <= datetime.now(timezone.utc) + timedelta(seconds=60):
+        _refresh_credentials(db, account, credentials)
+
+    return account, credentials
+
+
+def _execute_with_one_refresh_retry(
+    db: Session,
+    account: GoogleAccount,
+    credentials: Credentials,
+    request_factory: Callable[[Credentials], Any],
+) -> dict[str, Any]:
+    try:
+        result = request_factory(credentials).execute()
+    except HttpError as exc:
+        status_code = int(getattr(exc.resp, "status", 0))
+
+        if status_code == 401:
+            _refresh_credentials(db, account, credentials)
+            try:
+                result = request_factory(credentials).execute()
+            except HttpError as retry_exc:
+                raise GoogleReauthorizationRequiredError(
+                    "Googleの認可が無効です。再ログインしてください。"
+                ) from retry_exc
+        elif status_code == 403:
+            raise GoogleCalendarPermissionError(
+                "Google Calendar APIの権限が不足しています。"
+            ) from exc
+        else:
+            raise GoogleCalendarError(
+                "Google Calendar APIの呼び出しに失敗しました。"
+            ) from exc
+
+    # google-api-python-client側で更新された場合にもDBへ反映します。
+    if credentials.expiry and credentials.token:
+        _save_refreshed_credentials(db, account, credentials)
+
+    return result
+
+
+def list_events_for_date(
+    db: Session,
+    user_id: int,
+    target_date: date,
+) -> list[dict[str, Any]]:
+    """primaryカレンダーの指定日予定をAsia/Tokyo基準で取得します。"""
+
+    account, credentials = get_valid_credentials(db, user_id)
+    jst = ZoneInfo(settings.app_timezone)
+    start_local = datetime.combine(target_date, time.min, tzinfo=jst)
+    end_local = start_local + timedelta(days=1)
+
+    def request_factory(current_credentials: Credentials):
+        service = build(
+            "calendar",
+            "v3",
+            credentials=current_credentials,
+            cache_discovery=False,
+        )
+        return service.events().list(
+            calendarId="primary",
+            timeMin=start_local.isoformat(),
+            timeMax=end_local.isoformat(),
+            singleEvents=True,
+            orderBy="startTime",
+            timeZone=settings.app_timezone,
+            maxResults=2500,
+        )
+
+    result = _execute_with_one_refresh_retry(
+        db,
+        account,
+        credentials,
+        request_factory,
+    )
+
+    events: list[dict[str, Any]] = []
+    for item in result.get("items", []):
+        start_data = item.get("start", {})
+        end_data = item.get("end", {})
+        all_day = "date" in start_data
+
+        events.append(
+            {
+                "google_event_id": item.get("id", ""),
+                "title": item.get("summary", "（タイトルなし）"),
+                "start": start_data.get("dateTime") or start_data.get("date", ""),
+                "end": end_data.get("dateTime") or end_data.get("date", ""),
+                "all_day": all_day,
+                "html_link": item.get("htmlLink"),
+                "status": item.get("status"),
+            }
+        )
+
+    return events
+
+
+def create_calendar_event(
+    db: Session,
+    user_id: int,
+    title: str,
+    start: datetime,
+    end: datetime,
+    description: str | None,
+) -> dict[str, Any]:
+    """primaryカレンダーへ予定を1件登録します。"""
+
+    account, credentials = get_valid_credentials(db, user_id)
+    jst = ZoneInfo(settings.app_timezone)
+
+    if start.tzinfo is None:
+        start = start.replace(tzinfo=jst)
+    else:
+        start = start.astimezone(jst)
+
+    if end.tzinfo is None:
+        end = end.replace(tzinfo=jst)
+    else:
+        end = end.astimezone(jst)
+
+    body: dict[str, Any] = {
+        "summary": title,
+        "start": {
+            "dateTime": start.isoformat(),
+            "timeZone": settings.app_timezone,
+        },
+        "end": {
+            "dateTime": end.isoformat(),
+            "timeZone": settings.app_timezone,
+        },
     }
-  }
 
+    if description:
+        body["description"] = description
 
-def build_authorization_url() -> str:
-  """Google認証画面のURLを生成し、flowを保持する"""
-  settings = get_settings()
-  flow = Flow.from_client_config(
-    _build_client_config(),
-    scopes=SCOPES,
-    redirect_uri=settings.google_redirect_uri,
-  )
-  authorization_url, _state = flow.authorization_url(
-    access_type="offline",
-    include_granted_scopes="true",
-    prompt="consent",
-  )
-  _flow_store["flow"] = flow
-  return authorization_url
+    def request_factory(current_credentials: Credentials):
+        service = build(
+            "calendar",
+            "v3",
+            credentials=current_credentials,
+            cache_discovery=False,
+        )
+        return service.events().insert(
+            calendarId="primary",
+            body=body,
+        )
 
-
-def fetch_token(authorization_response_url: str) -> None:
-  """コールバックURLからトークンを取得する"""
-  flow = _flow_store.get("flow")
-  if not flow:
-    raise GoogleCalendarServiceError(
-      "セッション切れです。認証をやり直してください。"
+    return _execute_with_one_refresh_retry(
+        db,
+        account,
+        credentials,
+        request_factory,
     )
-  flow.fetch_token(authorization_response=authorization_response_url)
-
-
-def get_calendar_events(
-  time_min: Optional[str] = None, time_max: Optional[str] = None
-) -> list[dict]:
-  """Googleカレンダーから予定を取得する"""
-  flow = _flow_store.get("flow")
-  if not flow or not hasattr(flow, "credentials"):
-    raise GoogleCalendarServiceError("認証されていません。")
-
-  service = build("calendar", "v3", credentials=flow.credentials)
-
-  if not time_min:
-    time_min = datetime.datetime.now(datetime.timezone.utc).isoformat()
-
-  try:
-    events_result = (
-      service.events()
-      .list(
-        calendarId="primary",
-        timeMin=time_min,
-        timeMax=time_max,
-        maxResults=10,
-        singleEvents=True,
-        orderBy="startTime",
-      )
-      .execute()
-    )
-  except Exception as exc:
-    logger.error(f"カレンダー情報の取得に失敗しました: {exc}")
-    raise GoogleCalendarServiceError(
-      "カレンダー情報の取得中にエラーが発生しました。"
-    ) from exc
-
-  formatted_events = []
-  for event in events_result.get("items", []):
-    start = event["start"].get("dateTime", event["start"].get("date"))
-    end = event["end"].get("dateTime", event["end"].get("date"))
-    formatted_events.append(
-      {
-        "summary": event.get("summary", "タイトルなし"),
-        "start": start,
-        "end": end,
-      }
-    )
-  return formatted_events

@@ -11,5 +11,8 @@ openai>=1.35.10
 python-multipart>=0.0.9
 httpx>=0.28.1
 APScheduler>=3.10,<4.0
+pydub>=0.25.1
+google-auth>=2.56.0
 google-auth-oauthlib
-google-api-python-client
+google-api-python-client>=2.198.0
+cryptography>=48.0.1
