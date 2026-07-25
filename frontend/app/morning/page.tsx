@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Footer, HeaderIcons, MoonIcon } from '../../components';
+import { Clock } from '../../clock';
 
 // ============================================
 // ⑤ 朝の画面（Figma準拠・2026-07-20 UI変更版）
@@ -27,7 +28,7 @@ export default function MorningPage() {
         <header className="day-head">
           <div>
             <h1>おはようございます</h1>
-            <p>7/16 Thu ・ 8:34</p>
+            <p className="morning-date"><Clock /></p>
           </div>
           <HeaderIcons />
         </header>
