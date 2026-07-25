@@ -3,32 +3,48 @@
    色を変えたいときは、この下の :root だけ触ればOK。
    ============================================ */
 :root {
-  --deep-green: #2E5548;  /* 濃い緑：見出し・ボタン */
-  --night: #1C382E;       /* 夜の背景 */
-  --night2: #24443A;      /* 夜の背景（明るい方） */
-  --mid-green: #4F7B68;
-  --sage: #9DC0AC;        /* 薄い緑 */
-  --sage-light: #DCEAE1;
-  --sage-pale: #EEF4EF;
-  --gold: #DDA84F;        /* マイクの金色 */
-  --gold-light: #F4E1BB;
-  --cream: #F6F1E6;       /* 昼の背景 */
-  --ink: #26362F;         /* 文字色 */
-  --gray: #8A968E;
+  --deep-green: #2e5548; /* 濃い緑：見出し・ボタン */
+  --night: #1c382e; /* 夜の背景 */
+  --night2: #24443a; /* 夜の背景（明るい方） */
+  --mid-green: #4f7b68;
+  --sage: #9dc0ac; /* 薄い緑 */
+  --sage-light: #dceae1;
+  --sage-pale: #eef4ef;
+  --gold: #dda84f; /* マイクの金色 */
+  --gold-light: #f4e1bb;
+  --cream: #f6f1e6; /* 昼の背景 */
+  --ink: #26362f; /* 文字色 */
+  --gray: #8a968e;
   --line: rgba(38, 54, 47, 0.08);
 }
 
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
+* {
+  box-sizing: border-box;
+}
+html,
 body {
-  font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+  margin: 0;
+  padding: 0;
+}
+body {
+  font-family:
+    "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", "Meiryo",
+    sans-serif;
   background: var(--cream);
   color: var(--ink);
   height: 100dvh;
   overflow: hidden;
 }
-a { text-decoration: none; color: inherit; }
-button { font-family: inherit; border: none; background: none; cursor: pointer; }
+a {
+  text-decoration: none;
+  color: inherit;
+}
+button {
+  font-family: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
 
 /* スマホ幅の枠。PCで開いても真ん中に出るだけ */
 .app {
@@ -41,8 +57,12 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   overflow: hidden;
 }
 @media (min-width: 521px) {
-  body { background: #E7E1D3; }
-  .app { box-shadow: 0 0 44px rgba(38, 54, 47, 0.14); }
+  body {
+    background: #e7e1d3;
+  }
+  .app {
+    box-shadow: 0 0 44px rgba(38, 54, 47, 0.14);
+  }
 }
 
 /* ---------- フッター ---------- */
@@ -61,8 +81,13 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   gap: 3px;
   font-size: 10.5px;
 }
-.footer .tab.on { color: var(--deep-green); font-weight: 700; }
-.footer .tab.off { color: var(--gray); }
+.footer .tab.on {
+  color: var(--deep-green);
+  font-weight: 700;
+}
+.footer .tab.off {
+  color: var(--gray);
+}
 
 /* ---------- ① ログイン ---------- */
 .login {
@@ -75,18 +100,63 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   padding: 30px;
 }
 .ring {
-  width: 110px; height: 110px; border-radius: 50%;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
   border: 2px solid var(--sage);
   position: relative;
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 26px;
 }
-.ring::before { content: ""; position: absolute; inset: 14px; border-radius: 50%; border: 1.5px solid var(--gold); opacity: .7; }
-.ring .hands { width: 6px; height: 6px; background: var(--deep-green); border-radius: 50%; position: relative; }
-.ring .hands::before { content: ""; position: absolute; bottom: 2px; left: 2px; width: 2px; height: 28px; background: var(--deep-green); transform-origin: bottom; transform: rotate(20deg); }
-.ring .hands::after { content: ""; position: absolute; bottom: 2px; left: 2px; width: 2px; height: 20px; background: #B8823A; transform-origin: bottom; transform: rotate(120deg); }
-.login h1 { font-size: 26px; color: var(--deep-green); margin: 0 0 8px; }
-.login .catch { font-size: 14px; color: #5C6B62; margin: 0 0 40px; }
+.ring::before {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--gold);
+  opacity: 0.7;
+}
+.ring .hands {
+  width: 6px;
+  height: 6px;
+  background: var(--deep-green);
+  border-radius: 50%;
+  position: relative;
+}
+.ring .hands::before {
+  content: "";
+  position: absolute;
+  bottom: 2px;
+  left: 2px;
+  width: 2px;
+  height: 28px;
+  background: var(--deep-green);
+  transform-origin: bottom;
+  transform: rotate(20deg);
+}
+.ring .hands::after {
+  content: "";
+  position: absolute;
+  bottom: 2px;
+  left: 2px;
+  width: 2px;
+  height: 20px;
+  background: #b8823a;
+  transform-origin: bottom;
+  transform: rotate(120deg);
+}
+.login h1 {
+  font-size: 26px;
+  color: var(--deep-green);
+  margin: 0 0 8px;
+}
+.login .catch {
+  font-size: 14px;
+  color: #5c6b62;
+  margin: 0 0 40px;
+}
 .google-btn {
   width: 100%;
   background: var(--deep-green);
@@ -95,10 +165,18 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   border-radius: 999px;
   font-size: 14px;
   font-weight: 700;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   box-shadow: 0 10px 20px -8px rgba(46, 85, 72, 0.5);
 }
-.login-note { font-size: 12px; color: var(--deep-green); font-weight: 700; margin-top: 16px; }
+.login-note {
+  font-size: 12px;
+  color: var(--deep-green);
+  font-weight: 700;
+  margin-top: 16px;
+}
 
 /* ---------- 夜共通（②夜・④おわり） ---------- */
 .night {
@@ -111,10 +189,16 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   padding: 20px;
 }
 .moon {
-  position: absolute; top: 26px; right: 30px;
-  width: 26px; height: 26px; border-radius: 50%;
+  position: absolute;
+  top: 26px;
+  right: 30px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
   background: var(--gold-light);
-  box-shadow: inset -7px -4px 0 rgba(184, 130, 58, 0.35), 0 0 24px rgba(244, 225, 187, 0.35);
+  box-shadow:
+    inset -7px -4px 0 rgba(184, 130, 58, 0.35),
+    0 0 24px rgba(244, 225, 187, 0.35);
 }
 .night-center {
   flex: 1;
@@ -125,20 +209,59 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   gap: 20px;
   text-align: center;
 }
-.night-greet { font-size: 18px; font-weight: 700; color: var(--cream); margin: 0; letter-spacing: .04em; }
-.night-date { font-size: 10.5px; color: rgba(246, 241, 230, 0.45); letter-spacing: .08em; margin: -12px 0 0; }
+.night-greet {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--cream);
+  margin: 0;
+  letter-spacing: 0.04em;
+}
+.night-date {
+  font-size: 10.5px;
+  color: rgba(246, 241, 230, 0.45);
+  letter-spacing: 0.08em;
+  margin: -12px 0 0;
+}
 
 /* 呼吸するマイク */
 .mic-btn {
-  width: 96px; height: 96px; border-radius: 50%;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
   background: var(--gold);
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: relative;
   box-shadow: 0 14px 34px -10px rgba(221, 168, 79, 0.55);
 }
-.mic-btn::before { content: ""; position: absolute; inset: -12px; border-radius: 50%; border: 2px solid var(--gold); opacity: .3; animation: breath 3.2s ease-in-out infinite; }
-.mic-btn::after { content: ""; position: absolute; inset: -24px; border-radius: 50%; border: 1.5px solid var(--gold); opacity: .14; animation: breath 3.2s ease-in-out infinite .4s; }
-@keyframes breath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+.mic-btn::before {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+  border: 2px solid var(--gold);
+  opacity: 0.3;
+  animation: breath 3.2s ease-in-out infinite;
+}
+.mic-btn::after {
+  content: "";
+  position: absolute;
+  inset: -24px;
+  border-radius: 50%;
+  border: 1.5px solid var(--gold);
+  opacity: 0.14;
+  animation: breath 3.2s ease-in-out infinite 0.4s;
+}
+@keyframes breath {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
 
 /* ---------- ③ きいている ---------- */
 .listening {
@@ -148,34 +271,108 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   flex-direction: column;
   padding: 40px 26px calc(24px + env(safe-area-inset-bottom, 0px));
 }
-.waves { display: flex; justify-content: center; align-items: center; gap: 5px; height: 54px; }
-.waves i { width: 5px; border-radius: 3px; background: var(--gold); animation: wave 1.1s ease-in-out infinite; }
-@keyframes wave { 0%, 100% { transform: scaleY(.55); opacity: .6; } 50% { transform: scaleY(1); opacity: 1; } }
-.heard { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
-.heard p { font-size: 13.5px; line-height: 1.7; color: rgba(246, 241, 230, 0.9); margin: 0; }
-.stop-btn {
-  width: 64px; height: 64px; border-radius: 50%;
+.waves {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  height: 54px;
+}
+.waves i {
+  width: 5px;
+  border-radius: 3px;
   background: var(--gold);
-  display: flex; align-items: center; justify-content: center;
+  animation: wave 1.1s ease-in-out infinite;
+}
+@keyframes wave {
+  0%,
+  100% {
+    transform: scaleY(0.55);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+.heard {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+}
+.heard p {
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: rgba(246, 241, 230, 0.9);
+  margin: 0;
+}
+.stop-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   align-self: center;
   box-shadow: 0 10px 26px -8px rgba(221, 168, 79, 0.5);
 }
-.stop-btn i { width: 20px; height: 20px; border-radius: 5px; background: var(--night); }
+.stop-btn i {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  background: var(--night);
+}
 
 /* ---------- ④ おわり ---------- */
 .box {
-  width: 84px; height: 58px;
+  width: 84px;
+  height: 58px;
   border-radius: 12px;
   background: rgba(246, 241, 230, 0.1);
   border: 1.5px solid rgba(246, 241, 230, 0.35);
   position: relative;
 }
-.box::before { content: ""; position: absolute; top: -7px; left: 8px; right: 8px; height: 7px; border-radius: 4px 4px 0 0; background: rgba(246, 241, 230, 0.22); }
-.box-check { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
-.done-title { font-size: 17px; font-weight: 700; color: var(--cream); line-height: 1.8; margin: 4px 0 0; }
-.done-sub { font-size: 12px; color: rgba(246, 241, 230, 0.6); margin: -6px 0 0; }
-.ghost { align-self: center; font-size: 11px; color: rgba(246, 241, 230, 0.4); padding: 6px; }
-.ghost.gray { color: var(--gray); }
+.box::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  left: 8px;
+  right: 8px;
+  height: 7px;
+  border-radius: 4px 4px 0 0;
+  background: rgba(246, 241, 230, 0.22);
+}
+.box-check {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.done-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--cream);
+  line-height: 1.8;
+  margin: 4px 0 0;
+}
+.done-sub {
+  font-size: 12px;
+  color: rgba(246, 241, 230, 0.6);
+  margin: -6px 0 0;
+}
+.ghost {
+  align-self: center;
+  font-size: 11px;
+  color: rgba(246, 241, 230, 0.4);
+  padding: 6px;
+}
+.ghost.gray {
+  color: var(--gray);
+}
 
 /* ---------- 昼共通（⑤朝・⑥ひとこと・⑧きょう） ---------- */
 .day {
@@ -187,14 +384,41 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   gap: 12px;
   padding: 18px 20px 14px;
 }
-.day-head { display: flex; justify-content: space-between; align-items: flex-start; }
-.day-head h1 { font-size: 20px; color: var(--deep-green); margin: 0; }
-.day-head p { font-size: 11px; color: var(--gray); margin: 3px 0 0; }
-.hicons { display: flex; gap: 6px; }
-.hicon { width: 34px; height: 34px; border-radius: 10px; background: var(--sage-light); display: flex; align-items: center; justify-content: center; }
+.day-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.day-head h1 {
+  font-size: 20px;
+  color: var(--deep-green);
+  margin: 0;
+}
+.day-head p {
+  font-size: 11px;
+  color: var(--gray);
+  margin: 3px 0 0;
+}
+.hicons {
+  display: flex;
+  gap: 6px;
+}
+.hicon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--sage-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 /* 予定・タスクの1行カード（Figmaのスタイル） */
-.rows { display: flex; flex-direction: column; gap: 8px; }
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 .rowcard {
   display: flex;
   align-items: center;
@@ -207,25 +431,52 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   text-align: left;
   font-size: 13px;
 }
-.rowcard.gold { background: var(--gold-light); }
-.rowcard .time { font-weight: 800; color: var(--ink); width: 46px; flex: 0 0 auto; }
-.rowcard .title { flex: 1; color: var(--ink); }
-.rowcard.done .time, .rowcard.done .title { color: var(--gray); text-decoration: line-through; }
-.rowcard.done { background: var(--gold-light); }
+.rowcard.gold {
+  background: var(--gold-light);
+}
+.rowcard .time {
+  font-weight: 800;
+  color: var(--ink);
+  width: 46px;
+  flex: 0 0 auto;
+}
+.rowcard .title {
+  flex: 1;
+  color: var(--ink);
+}
+.rowcard.done .time,
+.rowcard.done .title {
+  color: var(--gray);
+  text-decoration: line-through;
+}
+.rowcard.done {
+  background: var(--gold-light);
+}
 
 /* チェックボックス（⑧きょう） */
 .checkbox {
-  width: 20px; height: 20px;
+  width: 20px;
+  height: 20px;
   border-radius: 6px;
   border: 1.6px solid var(--sage);
   background: #fff;
-  display: flex; align-items: center; justify-content: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 auto;
 }
-.checkbox.checked { background: var(--mid-green); border-color: var(--mid-green); }
+.checkbox.checked {
+  background: var(--mid-green);
+  border-color: var(--mid-green);
+}
 
 /* 秘書のひとこと・AIの返事 */
-.advice, .reply { font-size: 13px; line-height: 1.8; margin: 2px 4px; }
+.advice,
+.reply {
+  font-size: 13px;
+  line-height: 1.8;
+  margin: 2px 4px;
+}
 .quote {
   background: var(--sage-pale);
   border-radius: 14px;
@@ -246,7 +497,16 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   font-size: 12px;
   color: var(--gray);
 }
-.mic-circle { width: 34px; height: 34px; border-radius: 50%; background: var(--gold); display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.mic-circle {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
 
 /* ボタン */
 .big-btn {
@@ -260,7 +520,7 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   box-shadow: 0 10px 20px -8px rgba(46, 85, 72, 0.4);
 }
 .gray-btn {
-  background: #CFCFC7;
+  background: #cfcfc7;
   color: #fff;
   border-radius: 999px;
   padding: 14px;
@@ -268,8 +528,13 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   font-weight: 800;
   text-align: center;
 }
-.btn-row { display: flex; gap: 10px; }
-.half { flex: 1; }
+.btn-row {
+  display: flex;
+  gap: 10px;
+}
+.half {
+  flex: 1;
+}
 
 /* ---------- ⑦ 送り出し ---------- */
 .sendoff {
@@ -280,4 +545,30 @@ button { font-family: inherit; border: none; background: none; cursor: pointer; 
   justify-content: center;
   gap: 20px;
 }
-.sendoff p { font-size: 18px; font-weight: 800; color: var(--ink); margin: 0; }
+.sendoff p {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 0;
+}
+.auth-error {
+  width: 100%;
+  margin: 0 0 16px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #fff1ef;
+  color: #8f2d24;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.hicon {
+  border: 0;
+  color: #4f7b68;
+  font-size: 10px;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}

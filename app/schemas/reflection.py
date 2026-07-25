@@ -24,9 +24,9 @@ class ProposedScheduleChangeItem(BaseModel):
 
 
 class ReflectionRequest(BaseModel):
-    """POST /reflection のリクエスト"""
+    """POST /api/v1/reflection のリクエスト"""
 
-    user_id: int
+    ##user_id: int　user_idはログインセッションから取得するため、リクエストには含めない。
     reflection_date: date = Field(description="振り返り対象日")
     proposal_date: date = Field(description="重点ポイント・予定修正案の対象日")
     raw_text: Optional[str] = Field(
@@ -39,7 +39,7 @@ class ReflectionRequest(BaseModel):
 
 
 class ReflectionResponse(BaseModel):
-    """POST /reflection のレスポンス"""
+    """POST /api/v1/reflection のレスポンス"""
 
     reflection_id: int
     reflection_date: date
