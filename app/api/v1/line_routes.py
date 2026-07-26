@@ -24,8 +24,16 @@ from app.services.line_api import (
     verify_line_id_token,
 )
 
+from pydantic import BaseModel
+
 
 router = APIRouter(prefix="/api/line", tags=["LINE連携"])
+
+
+class LineStatusUpdateRequest(BaseModel):
+    """LINE通知有効/無効の更新リクエスト用スキーマ"""
+
+    status: str
 
 
 def utc_now_naive() -> datetime:
@@ -263,3 +271,40 @@ async def receive_line_webhook(
 
     db.commit()
     return {"ok": True}
+
+
+@router.put("/status")
+def update_line_connection_status(
+    body: LineStatusUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """ログイン中ユーザーのLINE通知状態（有効/無効）を更新します。"""
+
+    line_account = db.scalar(
+        select(LineAccount).where(LineAccount.user_id == current_user.id)
+    )
+
+    if line_account is None:
+        raise HTTPException(
+            status_code=404,
+            detail="LINE連携情報が見つかりません。",
+        )
+
+    if body.status not in ["active", "disabled"]:
+        raise HTTPException(
+            status_code=400,
+            detail="ステータスは 'active' または 'disabled' を指定してください。",
+        )
+
+    line_account.status = body.status
+    db.commit()
+    db.refresh(line_account)
+
+    return {
+        "linked": True,
+        "is_friend": line_account.is_friend,
+        "status": line_account.status,
+        "display_name": line_account.display_name,
+    }
+

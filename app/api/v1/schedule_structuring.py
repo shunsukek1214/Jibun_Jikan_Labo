@@ -1,11 +1,12 @@
 import logging
 import os
 import tempfile
-from datetime import date, time
+from datetime import date, time, datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, Query
 from pydantic import ValidationError
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -13,7 +14,14 @@ from app.dependencies.auth import get_current_user
 from app.models.schedule import Schedule
 from app.models.task import Task
 from app.models.user import User
-from app.schemas.schedule_structuring import ScheduleStructuringResponse, TaskItem
+from app.models.reflection import Reflection
+from app.schemas.schedule_structuring import (
+    ScheduleStructuringResponse,
+    TaskItem,
+    ScheduleResponse,
+    TaskResponseItem,
+    TaskStatusUpdateRequest,
+)
 from app.services.openai_service import (
     OpenAIService,
     OpenAIServiceError,
@@ -93,13 +101,36 @@ async def create_tomorrow_schedule(
             detail="AIによる予定構造化に失敗しました。",
         ) from exc
 
-    schedule = Schedule(
-        user_id=current_user.id,
-        target_date=target_date,
-        raw_text=transcribed_text,
-        summary=summary,
+    # 同じ (user_id, target_date) のスケジュールが既に存在する場合は上書き更新する。
+    # INSERT すると uq_schedules_user_date 制約違反になるため upsert にする。
+    existing_schedule = db.scalar(
+        select(Schedule).where(
+            Schedule.user_id == current_user.id,
+            Schedule.target_date == target_date,
+        )
     )
-    db.add(schedule)
+
+    if existing_schedule is not None:
+        # 既存スケジュールを更新する
+        existing_schedule.raw_text = transcribed_text
+        existing_schedule.summary = summary
+        schedule = existing_schedule
+
+        # 既存タスクを削除して再登録する（差分更新より安全）
+        old_tasks = list(
+            db.scalars(select(Task).where(Task.schedule_id == schedule.id))
+        )
+        for old_task in old_tasks:
+            db.delete(old_task)
+        db.flush()
+    else:
+        schedule = Schedule(
+            user_id=current_user.id,
+            target_date=target_date,
+            raw_text=transcribed_text,
+            summary=summary,
+        )
+        db.add(schedule)
 
     try:
         db.flush()
@@ -140,3 +171,112 @@ async def create_tomorrow_schedule(
         summary=summary,
         tasks=tasks,
     )
+
+
+
+@router.get("/schedule", response_model=ScheduleResponse)
+def get_schedule(
+    target_date: Optional[date] = Query(default=None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ScheduleResponse:
+    """指定日のスケジュール、タスク一覧、重点ポイントを取得します。"""
+
+    if target_date is None:
+        from zoneinfo import ZoneInfo
+        from app.core.config import settings
+
+        jst = ZoneInfo(settings.app_timezone)
+        target_date = datetime.now(jst).date()
+
+    schedule = db.scalar(
+        select(Schedule)
+        .where(
+            Schedule.user_id == current_user.id,
+            Schedule.target_date == target_date,
+        )
+        .order_by(Schedule.updated_at.desc(), Schedule.id.desc())
+    )
+    if schedule is None:
+        raise HTTPException(
+            status_code=404,
+            detail="指定日のスケジュールが見つかりません。",
+        )
+
+    tasks = list(
+        db.scalars(
+            select(Task)
+            .where(Task.schedule_id == schedule.id)
+            .order_by(Task.start_time.asc(), Task.id.asc())
+        )
+    )
+
+    reflection = db.scalar(
+        select(Reflection)
+        .where(
+            Reflection.user_id == current_user.id,
+            Reflection.proposal_date == target_date,
+        )
+        .order_by(Reflection.updated_at.desc(), Reflection.id.desc())
+    )
+    today_key_point = reflection.today_key_point if reflection else None
+
+    return ScheduleResponse(
+        schedule_id=schedule.id,
+        target_date=target_date,
+        summary=schedule.summary,
+        tasks=tasks,
+        today_key_point=today_key_point,
+    )
+
+
+@router.patch("/tasks/{task_id}/status", response_model=TaskResponseItem)
+def update_task_status(
+    task_id: int,
+    body: TaskStatusUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> TaskResponseItem:
+    """タスクの完了ステータスを更新します。"""
+
+    task = db.scalar(
+        select(Task)
+        .join(Schedule, Schedule.id == Task.schedule_id)
+        .where(
+            Task.id == task_id,
+            Schedule.user_id == current_user.id,
+        )
+    )
+    if task is None:
+        raise HTTPException(
+            status_code=404,
+            detail="タスクが見つからないか、編集権限がありません。",
+        )
+
+    if body.status not in ["completed", "pending"]:
+        raise HTTPException(
+            status_code=400,
+            detail="ステータスは 'completed' または 'pending' を指定してください。",
+        )
+
+    task.status = body.status
+    if body.status == "completed":
+        from datetime import timezone
+
+        task.completed_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    else:
+        task.completed_at = None
+
+    try:
+        db.commit()
+        db.refresh(task)
+    except Exception as exc:
+        db.rollback()
+        logger.exception("タスクステータスの更新に失敗しました。")
+        raise HTTPException(
+            status_code=500,
+            detail="タスクステータスの更新に失敗しました。",
+        ) from exc
+
+    return task
+

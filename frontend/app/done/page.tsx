@@ -1,17 +1,15 @@
 "use client";
-//import { useEffect, useState } from 'react';
+
+import { useState } from "react";
 import Link from "next/link";
 import { CheckIcon } from "../../components";
-//import { getReflect2 } from '../../api';
 
-// ④ おわり画面：見出しの文字をバックエンド(reflect2)からもらう結合テスト版。
-// 届かないときはFigmaの文字のまま → デモは絶対に壊れない。
+// ④ おわり画面：振り返り完了後に表示する。
+// メッセージは固定テキスト。
 export default function DonePage() {
-  /*
-  useEffect(() => {
-    getReflect2().then((m) => { if (m) setMsg(m); });
-  }, []);
-  */
+  const [msg] = useState<string>(
+    "おつかれさまでした\nあなたの時間をお過ごしください",
+  );
 
   return (
     <main className="night done">
@@ -22,10 +20,8 @@ export default function DonePage() {
             <CheckIcon size={24} color="#9DC0AC" />
           </span>
         </div>
-        <p className="done-title">
-          おつかれさまでした
-          <br />
-          あなたの時間をお過ごしください
+        <p className="done-title" style={{ whiteSpace: "pre-line" }}>
+          {msg}
         </p>
         <p className="done-sub">つづきは、あすの朝に</p>
       </div>
