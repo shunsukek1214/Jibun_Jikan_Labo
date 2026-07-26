@@ -1,8 +1,9 @@
-import { GoogleIcon } from "../components";
+"use client";
 
-type LoginPageProps = {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-};
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+
+import { GoogleIcon } from "../components";
 
 const ERROR_MESSAGES: Record<string, string> = {
   access_denied: "Googleログインまたはカレンダー連携がキャンセルされました。",
@@ -17,20 +18,19 @@ const ERROR_MESSAGES: Record<string, string> = {
   backend_unavailable: "FastAPIへ接続できませんでした。",
 };
 
-export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const params = await searchParams;
-  const authError = Array.isArray(params.auth_error)
-    ? params.auth_error[0]
-    : params.auth_error;
+function LoginContent() {
+  const searchParams = useSearchParams();
+  const authError = searchParams.get("auth_error");
 
   const apiBase = (
     process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000"
   ).replace(/\/$/, "");
 
   const forceConsent = authError === "missing_refresh_token";
-  const loginUrl = `${apiBase}/api/v1/auth/google/start${
-    forceConsent ? "?force_consent=true" : ""
-  }`;
+
+  const loginUrl =
+    `${apiBase}/api/v1/auth/google/start` +
+    (forceConsent ? "?force_consent=true" : "");
 
   return (
     <main className="login">
@@ -54,5 +54,19 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
       <p className="login-note">Googleカレンダーと連携してログイン</p>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="login">
+          <p>画面を読み込んでいます。</p>
+        </main>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }

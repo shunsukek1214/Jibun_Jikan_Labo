@@ -3,6 +3,7 @@
 
 # Environments
 .env
+.env.*
 .env.local
 .env.development.local
 .env.test.local
@@ -20,6 +21,7 @@ env/
 ENV/
 .pytest_cache/
 .mypy_cache/
+*.pyc
 
 # Databases
 *.db
@@ -32,3 +34,15 @@ dev.db
 # Media / Audio files (usually huge binaries should be excluded)
 *.wav
 *.mp3
+
+#frontend
+frontend/.env.local
+frontend/.next/
+frontend/out/
+frontend/node_modules/
+
+.DS_Store
+__MACOSX/
+
+# VS Codeの個人設定
+.vscode/
