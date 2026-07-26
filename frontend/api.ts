@@ -475,26 +475,3 @@ export async function createCalendarEvent(input: {
   // FastAPIが返した予定登録結果を返します。
   return response.json();
 }
-
-/**
- * 結合テスト用 → POST /api/v1/reflection2
- * 返事は {"message": "おつかれさまでした"} の形。文字列だけの形にも対応。
- */
-export async function getReflect2(): Promise<string | null> {
-  try {
-    const fd = new FormData();
-    fd.append("user_id", "1");
-    fd.append("reflection_date", today());
-    fd.append("proposal_date", today());
-    const res = await fetch(`${API}/api/v1/reflection2`, {
-      method: "POST",
-      body: fd,
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (typeof data === "string") return data;
-    return data?.message ?? null;
-  } catch {
-    return null;
-  }
-}
