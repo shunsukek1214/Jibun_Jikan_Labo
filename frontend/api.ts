@@ -476,25 +476,77 @@ export async function createCalendarEvent(input: {
   return response.json();
 }
 
+// ============================================================
+// スケジュールおよびタスク取得のための型定義とAPI
+// ============================================================
+
+export type TaskResponseItem = {
+  id: number;
+  title: string;
+  start_time: string | null;
+  end_time: string | null;
+  priority: string;
+  estimated_minutes: number | null;
+  status: string;
+};
+
+export type ScheduleResponse = {
+  schedule_id: number;
+  target_date: string;
+  summary: string | null;
+  tasks: TaskResponseItem[];
+  today_key_point: string | null;
+};
+
 /**
- * 結合テスト用 → POST /api/v1/reflection2
- * 返事は {"message": "おつかれさまでした"} の形。文字列だけの形にも対応。
+ * 指定日のスケジュール・タスク・重点ポイントを取得します。
+ * 登録がない場合はnullを返します。
  */
-export async function getReflect2(): Promise<string | null> {
+export async function getTodaySchedule(
+  targetDate = dateInTokyo(0),
+): Promise<ScheduleResponse | null> {
   try {
-    const fd = new FormData();
-    fd.append("user_id", "1");
-    fd.append("reflection_date", today());
-    fd.append("proposal_date", today());
-    const res = await fetch(`${API}/api/v1/reflection2`, {
-      method: "POST",
-      body: fd,
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (typeof data === "string") return data;
-    return data?.message ?? null;
-  } catch {
-    return null;
+    const encodedDate = encodeURIComponent(targetDate);
+    const response = await apiFetch(`/api/v1/schedule?target_date=${encodedDate}`);
+    return response.json();
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
+    throw error;
   }
 }
+
+/**
+ * 指定されたタスクの完了ステータスを更新します。
+ */
+export async function updateTaskStatus(
+  taskId: number,
+  status: "completed" | "pending",
+): Promise<TaskResponseItem> {
+  const response = await apiFetch(`/api/v1/tasks/${taskId}/status`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ status }),
+  });
+  return response.json();
+}
+
+/**
+ * LINE通知のオン/オフ状態（status: 'active' | 'disabled'）を更新します。
+ */
+export async function updateLineStatus(
+  status: "active" | "disabled",
+): Promise<LineStatus> {
+  const response = await apiFetch("/api/line/status", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ status }),
+  });
+  return response.json();
+}
+

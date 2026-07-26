@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import tempfile
+import traceback
 from datetime import date
 from typing import Optional
 
@@ -84,6 +85,54 @@ def _build_db_context(
         task_lines.append(f"{time_text} {task.title} status={task.status}")
 
     return schedule.summary or "", "\n".join(task_lines)
+
+
+# ⚠️ ルーティング順序の注意:
+# 「/reflection/latest」は「/reflection/{reflection_id}」のような
+# 動的パスのGETエンドポイントより「前」に定義すること。
+# （FastAPIは上から順にマッチさせるため、順序を誤ると
+# 「latest」が {reflection_id} として誤解釈される）
+
+@router.get("/reflection/latest", response_model=ReflectionResponse)
+async def get_latest_reflection(
+    target_date: Optional[date] = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ReflectionResponse:
+    """本人の指定日（省略時は当日）の振り返りを1件取得します。"""
+
+    query_date = target_date or date.today()
+
+    reflection = db.scalar(
+        select(Reflection)
+        .where(
+            Reflection.user_id == current_user.id,
+            Reflection.reflection_date == query_date,
+        )
+        .order_by(Reflection.created_at.desc(), Reflection.id.desc())
+        .limit(1)
+    )
+
+    if reflection is None:
+        raise HTTPException(
+            status_code=404,
+            detail="指定日の振り返りが見つかりませんでした。",
+        )
+
+    proposed_raw = json.loads(reflection.proposed_schedule_change or "[]")
+    proposed = [ProposedScheduleChangeItem(**item) for item in proposed_raw]
+
+    return ReflectionResponse(
+        reflection_id=reflection.id,
+        reflection_date=reflection.reflection_date,
+        proposal_date=reflection.proposal_date,
+        raw_text=reflection.raw_text,
+        reflection_summary=reflection.reflection_summary or "",
+        gap_analysis=reflection.gap_analysis or "",
+        gap_reason=reflection.gap_reason or "",
+        today_key_point=reflection.today_key_point or "",
+        proposed_schedule_change=proposed,
+    )
 
 
 @router.post("/reflection", response_model=ReflectionResponse)
@@ -169,33 +218,58 @@ async def create_reflection(
     try:
         proposed = [ProposedScheduleChangeItem(**item) for item in proposed_raw]
     except Exception as exc:
+        traceback.print_exc()
         raise HTTPException(
             status_code=502,
-            detail="AIが返した予定修正案の形式が不正です。",
+            detail=f"AIが返した予定修正案の形式が不正です: {exc}",
         ) from exc
 
-    reflection = Reflection(
-        user_id=current_user.id,
-        reflection_date=reflection_date,
-        proposal_date=proposal_date,
-        raw_text=transcribed_text,
-        reflection_summary=analyzed.get("reflection_summary", ""),
-        gap_analysis=analyzed.get("gap_analysis", ""),
-        gap_reason=analyzed.get("gap_reason", ""),
-        today_key_point=analyzed.get("today_key_point", ""),
-        proposed_schedule_change=json.dumps(proposed_raw, ensure_ascii=False),
+    # ▼▼▼ 上書きロジック（パターンB） ▼▼▼
+
+    existing = db.scalar(
+        select(Reflection).where(
+            Reflection.user_id == current_user.id,
+            Reflection.reflection_date == reflection_date,
+        )
     )
-    db.add(reflection)
+
+    if existing is not None:
+        existing.proposal_date = proposal_date
+        existing.raw_text = transcribed_text
+        existing.reflection_summary = analyzed.get("reflection_summary", "")
+        existing.gap_analysis = analyzed.get("gap_analysis", "")
+        existing.gap_reason = analyzed.get("gap_reason", "")
+        existing.today_key_point = analyzed.get("today_key_point", "")
+        existing.proposed_schedule_change = json.dumps(
+            proposed_raw, ensure_ascii=False
+        )
+        reflection = existing
+    else:
+        reflection = Reflection(
+            user_id=current_user.id,
+            reflection_date=reflection_date,
+            proposal_date=proposal_date,
+            raw_text=transcribed_text,
+            reflection_summary=analyzed.get("reflection_summary", ""),
+            gap_analysis=analyzed.get("gap_analysis", ""),
+            gap_reason=analyzed.get("gap_reason", ""),
+            today_key_point=analyzed.get("today_key_point", ""),
+            proposed_schedule_change=json.dumps(proposed_raw, ensure_ascii=False),
+        )
+        db.add(reflection)
 
     try:
         db.commit()
         db.refresh(reflection)
     except Exception as exc:
         db.rollback()
+        traceback.print_exc()
         raise HTTPException(
             status_code=500,
-            detail="振り返り結果のDB保存に失敗しました。",
+            detail=f"振り返り結果のDB保存に失敗しました: {exc}",
         ) from exc
+
+    # ▲▲▲ ここまで ▲▲▲
 
     return ReflectionResponse(
         reflection_id=reflection.id,

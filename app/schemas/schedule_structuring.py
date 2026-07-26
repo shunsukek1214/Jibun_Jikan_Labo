@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, time
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
@@ -40,3 +40,34 @@ class ScheduleStructuringResponse(BaseModel):
     raw_text: str
     summary: str
     tasks: List[TaskItem]
+
+
+class TaskResponseItem(BaseModel):
+    """データベースから取得したタスク情報を返すためのスキーマ"""
+
+    id: int
+    title: str
+    start_time: Optional[time] = None
+    end_time: Optional[time] = None
+    priority: str
+    estimated_minutes: Optional[int] = None
+    status: str
+
+    class Config:
+        from_attributes = True
+
+
+class ScheduleResponse(BaseModel):
+    """指定日のスケジュール、タスク一覧、重点ポイントをまとめて返すレスポンススキーマ"""
+
+    schedule_id: int
+    target_date: date
+    summary: Optional[str] = None
+    tasks: List[TaskResponseItem]
+    today_key_point: Optional[str] = None
+
+
+class TaskStatusUpdateRequest(BaseModel):
+    """タスクステータス更新リクエスト用のスキーマ"""
+
+    status: str
