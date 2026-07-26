@@ -15,6 +15,7 @@ from app.core.security import (
     TokenDecryptionError,
     decrypt_token,
     encrypt_token,
+    utc_now_naive,
 )
 from app.models.google_account import GoogleAccount
 from app.services.google_oauth_service import (
@@ -39,10 +40,15 @@ class GoogleCalendarPermissionError(GoogleCalendarError):
     """スコープ不足または書込権限不足の場合です。"""
 
 
-def _as_utc_aware(value: datetime) -> datetime:
+def _as_utc_naive(value: datetime) -> datetime:
+    """
+    Google認証ライブラリとMySQL DATETIMEで扱えるように、
+    UTC基準のタイムゾーン情報なし日時へ統一します。
+    """
     if value.tzinfo is None:
-        return value.replace(tzinfo=timezone.utc)
-    return value.astimezone(timezone.utc)
+        return value
+
+    return value.astimezone(timezone.utc).replace(tzinfo=None)
 
 
 def _load_account(db: Session, user_id: int) -> GoogleAccount:
@@ -79,9 +85,8 @@ def _build_credentials(account: GoogleAccount) -> Credentials:
         client_id=settings.google_client_id,
         client_secret=settings.google_client_secret,
         scopes=scopes,
-        expiry=_as_utc_aware(account.expires_at),
+        expiry=_as_utc_naive(account.expires_at),
     )
-
 
 def _save_refreshed_credentials(
     db: Session,
@@ -103,7 +108,8 @@ def _save_refreshed_credentials(
         changed = True
 
     if credentials.expiry:
-        expiry_naive = credentials.expiry.astimezone(timezone.utc).replace(tzinfo=None)
+        expiry_naive = _as_utc_naive(credentials.expiry)
+
         if account.expires_at != expiry_naive:
             account.expires_at = expiry_naive
             changed = True
@@ -142,7 +148,7 @@ def get_valid_credentials(
     credentials = _build_credentials(account)
 
     # 通信中の期限切れを避けるため60秒前から更新します。
-    if credentials.expiry <= datetime.now(timezone.utc) + timedelta(seconds=60):
+    if credentials.expiry <= utc_now_naive() + timedelta(seconds=60):
         _refresh_credentials(db, account, credentials)
 
     return account, credentials
