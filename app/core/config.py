@@ -38,7 +38,7 @@ class Settings(BaseSettings):
     google_client_id: str
     google_client_secret: str
     google_redirect_uri: str
-    frontend_after_login_url: str = "http://localhost:3000/night"
+    frontend_after_login_url: str = "http://localhost:3000/start"
     frontend_auth_error_url: str = "http://localhost:3000"
     oauth_state_ttl_minutes: int = 10
 
