@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense } from "react";
+
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 // ============================================
 // 夜のエラー画面（Figma 02-1 / 02-2 / 05-1 対応）
@@ -43,16 +45,14 @@ const COPY: Record<
   },
 };
 
-export default function NightErrorPage() {
-  const [reason, setReason] = useState<Reason>("offline");
+function NightErrorContent() {
+  const searchParams = useSearchParams();
+  const value = searchParams.get("reason");
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const value = params.get("reason");
-    if (value === "mic" || value === "unheard" || value === "offline") {
-      setReason(value);
-    }
-  }, []);
+  const reason: Reason =
+    value === "mic" || value === "unheard" || value === "offline"
+      ? value
+      : "offline";
 
   const copy = COPY[reason];
 
@@ -149,5 +149,27 @@ export default function NightErrorPage() {
         今夜はやめておく
       </Link>
     </main>
+  );
+}
+
+export default function NightErrorPage() {
+  return (
+    <Suspense
+      fallback={
+        <main
+          style={{
+            minHeight: "100vh",
+            display: "grid",
+            placeItems: "center",
+            background: "#1C382E",
+            color: "#F6F1E6",
+          }}
+        >
+          <p>画面を読み込んでいます。</p>
+        </main>
+      }
+    >
+      <NightErrorContent />
+    </Suspense>
   );
 }

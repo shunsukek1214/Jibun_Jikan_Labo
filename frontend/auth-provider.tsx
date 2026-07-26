@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 
 import { ApiError, CurrentUser, getCurrentUser, logout } from "./api";
 
-
 type AuthContextValue = {
   user: CurrentUser | null;
   signOut: () => Promise<void>;
@@ -18,23 +17,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<CurrentUser | null>(null);
-  const [loading, setLoading] = useState(!PUBLIC_PATHS.has(pathname));
+
+  const [verifiedPathname, setVerifiedPathname] = useState<string | null>(null);
+
+  const isPublicPath = PUBLIC_PATHS.has(pathname);
 
   useEffect(() => {
-    if (PUBLIC_PATHS.has(pathname)) {
-      setLoading(false);
+    if (isPublicPath) {
       return;
     }
 
     let active = true;
-    setLoading(true);
 
     getCurrentUser()
       .then((currentUser) => {
-        if (active) setUser(currentUser);
+        if (!active) {
+          return;
+        }
+
+        setUser(currentUser);
+        setVerifiedPathname(pathname);
       })
       .catch((error) => {
-        if (!active) return;
+        if (!active) {
+          return;
+        }
 
         const code =
           error instanceof ApiError && error.status === 401
@@ -42,15 +49,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             : "backend_unavailable";
 
         router.replace(`/?auth_error=${code}`);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
       });
 
     return () => {
       active = false;
     };
-  }, [pathname, router]);
+  }, [isPublicPath, pathname, router]);
+
+  const loading = !isPublicPath && verifiedPathname !== pathname;
 
   const signOut = async () => {
     try {
