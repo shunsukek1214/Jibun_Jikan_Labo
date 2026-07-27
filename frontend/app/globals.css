@@ -485,6 +485,39 @@ button {
   line-height: 1.7;
 }
 
+.reflection-cards {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.reflection-card {
+  padding: 16px;
+  border: 1px solid #eee4d5;
+  border-radius: 14px;
+  background: #fffdf9;
+}
+
+.key-point-card {
+  border-color: #ead3a6;
+  background: #fff8e9;
+}
+
+.reflection-label {
+  margin: 0 0 8px;
+  color: #8b6b38;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.reflection-text {
+  margin: 0;
+  color: #3d3428;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
 /* マイク付きの入力ピル */
 .mic-pill {
   display: flex;
