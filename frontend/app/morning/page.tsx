@@ -161,8 +161,8 @@ export default function MorningPage() {
           </article>
         </section>
 
-        <Link href="/sendoff" className="big-btn">
-          きょうもがんばる！
+        <Link href="/today" className="big-btn">
+          時間割を確認する
         </Link>
       </main>
 
