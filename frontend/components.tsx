@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import { LogoutButton } from "./auth-provider";
 
@@ -33,6 +36,51 @@ export const MoonIcon = ({
       d="M19 14.5A8 8 0 1 1 9.5 5 6.5 6.5 0 0 0 19 14.5z"
       stroke={color}
       strokeWidth="1.8"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+export const SunIcon = ({
+  size = 19,
+  color = "currentColor",
+}: {
+  size?: number;
+  color?: string;
+}) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="12" r="4" stroke={color} strokeWidth="1.8" />
+    <path
+      d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"
+      stroke={color}
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+export const TodoIcon = ({
+  size = 19,
+  color = "currentColor",
+}: {
+  size?: number;
+  color?: string;
+}) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <rect
+      x="4"
+      y="4"
+      width="16"
+      height="16"
+      rx="4"
+      stroke={color}
+      strokeWidth="1.8"
+    />
+    <path
+      d="M8.5 12l2.6 2.6 4.6-5.4"
+      stroke={color}
+      strokeWidth="1.8"
+      strokeLinecap="round"
       strokeLinejoin="round"
     />
   </svg>
@@ -156,7 +204,7 @@ export const GoogleIcon = () => (
 );
 
 // ---- ヘッダー右上の（記録・設定）ボタン ----
-// 歯車は設定画面（/settings）へ。記録の画面はまだ無いので飾り。
+// 歯車は設定画面（/settings/line）へ。記録の画面はまだ無いので飾り。
 export const HeaderIcons = () => (
   <div className="hicons">
     <span className="hicon" title="履歴">
@@ -174,21 +222,40 @@ export const HeaderIcons = () => (
   </div>
 );
 
-// ---- フッター〔じぶん｜いま｜カレンダー〕 ----
-// じぶん・カレンダーの画面はまだ無いので、押せない飾りにしてある（Figmaと同じ）。
-export const Footer = () => (
-  <nav className="footer">
-    <span className="tab off">
-      <PersonIcon color="#8A968E" />
-      <span>じぶん</span>
-    </span>
-    <Link href="/night" className="tab on">
-      <MoonIcon color="#2E5548" />
-      <span>いま</span>
-    </Link>
-    <span className="tab off">
-      <CalendarIcon color="#8A968E" />
-      <span>カレンダー</span>
-    </span>
-  </nav>
-);
+// ---- フッター〔あさ｜やること｜よる〕 ----
+// いま開いている画面のタブが自動で点灯する（usePathnameで判定）。
+//   あさ     → /morning（けさの時間割とAIの振り返り）
+//   やること → /today （きょうのタスクをチェック）
+//   よる     → /night （明日の予定を預ける）
+// はじまり画面（/start）ではどれも点灯しない。
+export const Footer = () => {
+  const pathname = usePathname() ?? "";
+
+  const isAsa = pathname.startsWith("/morning");
+  const isYaru =
+    pathname.startsWith("/today") || pathname.startsWith("/sendoff");
+  const isYoru =
+    pathname.startsWith("/night") ||
+    pathname.startsWith("/listening") ||
+    pathname.startsWith("/done");
+
+  const GREEN = "#2E5548";
+  const GRAY = "#8A968E";
+
+  return (
+    <nav className="footer">
+      <Link href="/morning" className={`tab ${isAsa ? "on" : "off"}`}>
+        <SunIcon color={isAsa ? GREEN : GRAY} />
+        <span>あさ</span>
+      </Link>
+      <Link href="/today" className={`tab ${isYaru ? "on" : "off"}`}>
+        <TodoIcon color={isYaru ? GREEN : GRAY} />
+        <span>やること</span>
+      </Link>
+      <Link href="/night" className={`tab ${isYoru ? "on" : "off"}`}>
+        <MoonIcon color={isYoru ? GREEN : GRAY} />
+        <span>よる</span>
+      </Link>
+    </nav>
+  );
+};
