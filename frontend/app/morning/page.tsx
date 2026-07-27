@@ -92,7 +92,7 @@ export default function MorningPage() {
         <header className="day-head">
           <div>
             <h1>おはようございます</h1>
-            <p className="morning-date">
+            <p className="morning-date" style={{ color: "#5F6E66" }}>
               <Clock />
             </p>
           </div>

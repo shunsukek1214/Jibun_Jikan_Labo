@@ -140,7 +140,7 @@ export default function TodayPage() {
         <header className="day-head">
           <div>
             <h1>こんにちは ☀️</h1>
-            <p>{dateLabel}</p>
+            <p style={{ color: "#5F6E66" }}>{dateLabel}</p>
           </div>
           <HeaderIcons />
         </header>

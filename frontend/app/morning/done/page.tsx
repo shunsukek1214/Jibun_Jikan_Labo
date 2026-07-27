@@ -30,7 +30,7 @@ export default function MorningDonePage() {
     <main
       style={{
         flex: 1,
-        background: "linear-gradient(172deg, #5D8B75, #4F7B68 70%)",
+        background: "linear-gradient(172deg, #3E6755, #2F5343 70%)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
