@@ -4,18 +4,18 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ApiError, sendUtterance } from "../../api";
-import { BackButton } from '../../back-button';
+import { BackButton } from "../../back-button";
 
 // ============================================
-// ③ きいている画面（エラー振り分け対応版）
+// ③ きいている画面（発話誘導＋録音品質アップ版）
 // 置き場所: frontend/app/listening/page.tsx（丸ごと置き換え）
 //
-// こせっちの実装（await送信・401はログインへ）はそのまま生かして、
-// 失敗の種類ごとに専用のエラー画面 /night/error へ振り分ける:
-//   ・マイク拒否            → /night/error?reason=mic
-//   ・422（聞き取れず）      → /night/error?reason=unheard
-//   ・その他の失敗（電波等）  → /night/error?reason=offline
-//   ・401（セッション切れ）   → /?auth_error=session_expired（従来どおり）
+// 前回からの変更点:
+//   1. 発話誘導コピー — 「何を話せばいいか」を例文で見せる
+//      （りすちゃんFB: 誘導しないと欲しい発話は出てこない）
+//   2. 録音品質 — マイクにノイズ抑制・エコー除去・自動音量を指定し、
+//      対応ブラウザではopus 128kbpsで録音（文字起こし精度の底上げ）
+// エラー振り分け（/night/error）は前回のまま。
 // ============================================
 
 export default function ListeningPage() {
@@ -28,9 +28,23 @@ export default function ListeningPage() {
   // 画面が開いたら録音スタート
   useEffect(() => {
     navigator.mediaDevices
-      .getUserMedia({ audio: true })
+      .getUserMedia({
+        audio: {
+          // まわりの雑音・エコー・声量ムラをブラウザ側で整えてから録る
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      })
       .then((stream) => {
-        const recorder = new MediaRecorder(stream);
+        // 対応していれば高めのビットレートのopusで録音する
+        const options: MediaRecorderOptions = {};
+        if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
+          options.mimeType = "audio/webm;codecs=opus";
+          options.audioBitsPerSecond = 128000;
+        }
+
+        const recorder = new MediaRecorder(stream, options);
         recorder.ondataavailable = (event) => {
           if (event.data.size > 0) chunksRef.current.push(event.data);
         };
@@ -90,6 +104,8 @@ export default function ListeningPage() {
 
   return (
     <main className="listening">
+      <BackButton to="/night" dark />
+
       {/* 音の波（かざり） */}
       <div className="waves">
         {[16, 30, 44, 26, 38, 20, 32].map((height, index) => (
@@ -100,10 +116,22 @@ export default function ListeningPage() {
         ))}
       </div>
 
-      {/* 話した言葉（Figmaと同じ見本文） */}
+      {/* 発話の誘導：質問ではなく「答えの型」を見せる */}
       <div className="heard">
-        <p>明日の予定とタスクを話してください。</p>
-        {message && <p>{message}</p>}
+        <p style={{ fontWeight: 800, fontSize: 15 }}>
+          あしたやることを、時間と一緒にどうぞ。
+        </p>
+        <p style={{ opacity: 0.75 }}>
+          例：「10時にA社の見積もり。午後は資料づくり。
+          <br />
+          13時から1on1。経費精算もやらなきゃ」
+        </p>
+        <p style={{ opacity: 0.75 }}>
+          順番バラバラ・思いつくままで大丈夫です。
+        </p>
+        {message && (
+          <p style={{ color: "#F4E1BB", fontWeight: 800 }}>{message}</p>
+        )}
       </div>
 
       {/* 停止ボタン */}
@@ -115,7 +143,6 @@ export default function ListeningPage() {
       >
         <i />
       </button>
-      <BackButton to="/start" dark />
     </main>
   );
 }

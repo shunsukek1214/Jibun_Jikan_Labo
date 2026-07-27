@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
 import {
   Footer,
   HeaderIcons,
@@ -8,6 +9,7 @@ import {
   MoonIcon,
   CheckIcon,
 } from "../../components";
+import { BackButton } from "../../back-button";
 import {
   getTodaySchedule,
   updateTaskStatus,
@@ -15,9 +17,13 @@ import {
 } from "../../api";
 
 // ============================================
-// ⑧ きょうの画面（Figma 8枚目）
-// タスクをタップするとチェックが付く／外れる。
-// RFP図6の POST /tasks/{id}/complete に対応する画面。
+// ⑧ きょうの画面（重要ポイント掲載版）
+// 置き場所: frontend/app/today/page.tsx（丸ごと置き換え）
+//
+// もとの実装（実データ取得＋タップで完了/未完了の楽観的更新）はそのまま。
+// 追加した点は2つだけ:
+//   1. きょうの重要ポイント（today_key_point）をタスクの上に表示
+//   2. 戻るボタン（/morning へ）
 // ============================================
 
 type TaskUI = {
@@ -49,12 +55,12 @@ function formatTime(tStr: string | null): string {
 
 export default function TodayPage() {
   const [tasks, setTasks] = useState<TaskUI[]>(defaultTasks);
+  const [keyPoint, setKeyPoint] = useState<string>("");
   const [dateLabel, setDateLabel] = useState<string>("7/16 Thu ・ 12:30");
 
   useEffect(() => {
     // ブラウザーの初期描画が完了した後に日付を設定する
     const timerId = window.setTimeout(() => {
-      // クライアント側の日付ラベル設定
       const d = new Date();
       const formattedDate = new Intl.DateTimeFormat("en-US", {
         month: "numeric",
@@ -75,10 +81,12 @@ export default function TodayPage() {
   }, []);
 
   useEffect(() => {
-    // APIから本日の予定をロード
+    // APIから本日の予定と重要ポイントをロード
     getTodaySchedule()
       .then((data: ScheduleResponse | null) => {
-        if (data && data.tasks.length > 0) {
+        if (!data) return;
+
+        if (data.tasks.length > 0) {
           const mapped: TaskUI[] = data.tasks.map((t) => ({
             id: t.id,
             time: formatTime(t.start_time),
@@ -89,6 +97,10 @@ export default function TodayPage() {
             done: t.status === "completed",
           }));
           setTasks(mapped);
+        }
+
+        if (data.today_key_point) {
+          setKeyPoint(data.today_key_point);
         }
       })
       .catch((err) => {
@@ -123,13 +135,23 @@ export default function TodayPage() {
   return (
     <>
       <main className="day">
+        <BackButton to="/morning" />
+
         <header className="day-head">
           <div>
             <h1>こんにちは ☀️</h1>
-            <p>{dateLabel}</p>
+            <p style={{ color: "#5F6E66" }}>{dateLabel}</p>
           </div>
           <HeaderIcons />
         </header>
+
+        {/* きょうの重要ポイント（朝の振り返りから生まれた一言） */}
+        {keyPoint && (
+          <p className="advice">
+            <MoonIcon size={14} color="#DDA84F" /> きょうの重要ポイント：
+            {keyPoint}
+          </p>
+        )}
 
         {/* タスク一覧（タップで完了） */}
         <div className="rows">

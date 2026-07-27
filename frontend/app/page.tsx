@@ -1,9 +1,23 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { GoogleIcon } from "../components";
+import { getCurrentUser } from "../api";
+
+// ============================================
+// ① ログイン画面（体感速度アップ版）
+// 置き場所: frontend/app/page.tsx（丸ごと置き換え）
+//
+// 変更点は2つ:
+//   1. 画面を開いた瞬間に /auth/me を裏で1回呼ぶ。
+//      ・眠っているバックエンドをここで起こしておく
+//        （ボタンを押す頃にはウォームアップ済み＝体感が速くなる）
+//      ・すでにログイン済みなら、ボタンを押させずに /start へ直行
+//   2. ボタンを押したら「Googleへ移動中…」表示にして、
+//      無反応に見える時間をなくす
+// ============================================
 
 const ERROR_MESSAGES: Record<string, string> = {
   access_denied: "Googleログインまたはカレンダー連携がキャンセルされました。",
@@ -21,6 +35,24 @@ const ERROR_MESSAGES: Record<string, string> = {
 function LoginContent() {
   const searchParams = useSearchParams();
   const authError = searchParams.get("auth_error");
+  const [leaving, setLeaving] = useState(false);
+
+  // バックエンドのウォームアップ＋ログイン済みならスキップ
+  useEffect(() => {
+    // セッション切れで戻された直後は自動スキップしない
+    // （また /start へ往復するループを防ぐ）
+    if (authError) return;
+
+    getCurrentUser()
+      .then(() => {
+        // Cookieのセッションがまだ生きている → ログイン不要
+        window.location.replace("/start");
+      })
+      .catch(() => {
+        // 未ログインや圏外は何もしない（この呼び出し自体が
+        // バックエンドを起こす役目を果たしている）
+      });
+  }, [authError]);
 
   const apiBase = (
     process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000"
@@ -47,9 +79,18 @@ function LoginContent() {
         </p>
       )}
 
-      <a href={loginUrl} className="google-btn">
+      <a
+        href={loginUrl}
+        className="google-btn"
+        onClick={() => setLeaving(true)}
+        style={leaving ? { opacity: 0.7, pointerEvents: "none" } : undefined}
+      >
         <GoogleIcon />
-        {forceConsent ? "Googleへ再同意する" : "Googleではじめる"}
+        {leaving
+          ? "Googleへ移動中…"
+          : forceConsent
+            ? "Googleへ再同意する"
+            : "Googleではじめる"}
       </a>
 
       <p className="login-note">Googleカレンダーと連携してログイン</p>

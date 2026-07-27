@@ -8,19 +8,15 @@ import { ApiError, createReflection } from "../../../api";
 import { BackButton } from "../../../back-button";
 
 // ============================================
-// 朝・振り返りをきいている画面
-// 置き場所: frontend/app/morning/listening/page.tsx
-// （morning の下に新規フォルダ listening を作る）
+// 朝・振り返りをきいている画面（発話誘導＋録音品質アップ版）
+// 置き場所: frontend/app/morning/listening/page.tsx（丸ごと置き換え）
 //
-// 夜の /listening と同じ作り。違いは3つだけ:
-//   1. 見た目が朝の緑（夜の紺緑ではなく）
-//   2. 送り先が createReflection（api.tsにこせっちが用意済み）
-//      - reflection_date = 昨日（昨日の過ごし方を話すため）
-//      - proposal_date   = 今日（AIの提案を今日に反映するため）
-//   3. 成功したら /morning/done へ
-//
-// エラーはこの画面の中で案内して、もう一度ためせる
-// （ページを開き直すと録音が再スタートする仕組みを使う）。
+// 前回からの変更点:
+//   1. 発話誘導コピー — 「昨日はどんな一日？」だと日記になってしまう
+//      （りす講師FB）ので、「きのうの積み残し＋きょうどこでやるか」の
+//      型を例文で見せる。カレンダー反映につながる発話を引き出す狙い。
+//   2. 録音品質 — ノイズ抑制・エコー除去・自動音量＋opus 128kbps。
+// 送信先は createReflection（reflection_date=昨日, proposal_date=今日）のまま。
 // ============================================
 
 // api.ts の dateInTokyo と同じ計算（api.ts側は非公開のため自前で持つ）
@@ -53,9 +49,21 @@ export default function MorningListeningPage() {
   // 画面が開いたら録音スタート
   useEffect(() => {
     navigator.mediaDevices
-      .getUserMedia({ audio: true })
+      .getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      })
       .then((stream) => {
-        const recorder = new MediaRecorder(stream);
+        const options: MediaRecorderOptions = {};
+        if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) {
+          options.mimeType = "audio/webm;codecs=opus";
+          options.audioBitsPerSecond = 128000;
+        }
+
+        const recorder = new MediaRecorder(stream, options);
         recorder.ondataavailable = (event) => {
           if (event.data.size > 0) chunksRef.current.push(event.data);
         };
@@ -85,7 +93,7 @@ export default function MorningListeningPage() {
     }
 
     setSending(true);
-    setMessage("今日の時間割に反映しています…");
+    setMessage("きょうの時間割に反映しています…");
 
     recorder.onstop = async () => {
       const audio = new Blob(chunksRef.current, { type: "audio/webm" });
@@ -131,12 +139,14 @@ export default function MorningListeningPage() {
     <main
       style={{
         flex: 1,
-        background: "linear-gradient(172deg, #5D8B75, #4F7B68 70%)",
+        background: "linear-gradient(172deg, #3E6755, #2F5343 70%)",
         display: "flex",
         flexDirection: "column",
         padding: "40px 26px calc(24px + env(safe-area-inset-bottom, 0px))",
       }}
     >
+      <BackButton to="/start" dark />
+
       {/* 音の波（かざり）。失敗中は静かに止める */}
       <div
         style={{
@@ -164,7 +174,9 @@ export default function MorningListeningPage() {
         ))}
       </div>
 
-      {/* 問いかけ */}
+      {/* 発話の誘導：質問ではなく「答えの型」を複数の事例で見せる。
+          聞きたいのは昨日の「予定と実際のズレ」＝振り返り。
+          このズレを材料に、AIが今日の時間割を組み直す。 */}
       <div
         style={{
           flex: 1,
@@ -176,29 +188,44 @@ export default function MorningListeningPage() {
       >
         <p
           style={{
-            fontSize: 15,
+            fontSize: 16,
             fontWeight: 800,
             lineHeight: 1.7,
             color: "#F6F1E6",
             margin: 0,
           }}
         >
-          おはようございます。
+          きのうの「予定」と「実際」、
           <br />
-          昨日は、どんな一日でしたか？
+          ズレはありましたか？
+        </p>
+        <p
+          style={{
+            fontSize: 12.5,
+            fontWeight: 700,
+            lineHeight: 2.0,
+            color: "rgba(246,241,230,.92)",
+            margin: 0,
+          }}
+        >
+          「見積もりが終わらなかった。きょうの午前にやりたい」
+          <br />
+          「資料づくり、30分のつもりが2時間かかった」
+          <br />
+          「会議が押して、午後がぜんぶ後ろにずれた」
         </p>
         <p
           style={{
             fontSize: 12,
             fontWeight: 700,
             lineHeight: 1.8,
-            color: "rgba(246,241,230,.75)",
+            color: "rgba(246,241,230,.85)",
             margin: 0,
           }}
         >
-          できたこと、ズレたこと、今日の気がかり——
+          うまくいったことでも大丈夫。ズレと理由をそのまま話せば、
           <br />
-          思いつくままで大丈夫です。
+          AIがきょうの時間割を組み直します。
         </p>
         {message && (
           <p
@@ -241,7 +268,7 @@ export default function MorningListeningPage() {
           <Link
             href="/start"
             style={{
-              color: "rgba(246,241,230,.7)",
+              color: "rgba(246,241,230,.88)",
               fontSize: 12,
               fontWeight: 800,
               textDecoration: "underline",
@@ -279,7 +306,6 @@ export default function MorningListeningPage() {
           />
         </button>
       )}
-      <BackButton to="/start" dark />
     </main>
   );
 }
