@@ -31,7 +31,7 @@ def build_morning_message() -> str:
         "Googleカレンダー\n"
         f"{settings.google_calendar_url}\n\n"
         "じぶん時間ラボのToday画面\n"
-        f"{settings.frontend_today_url}"
+        f"{settings.frontend_today_url}?openExternalBrowser=1"
     )
 
 
@@ -44,7 +44,7 @@ def build_key_point_message(today_key_point: str) -> str:
         "今日の重点ポイントです。\n\n"
         f"{today_key_point}\n\n"
         "Today画面を確認する\n"
-        f"{settings.frontend_today_url}"
+        f"{settings.frontend_today_url}?openExternalBrowser=1"
     )
 
 
