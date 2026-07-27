@@ -10,29 +10,48 @@ const rows = [
   { time: '15:00', title: '経費精算', moon: true },
 ];
 
-async function getTodayKeyPoint(): Promise<string> {
+type LatestReflection = {
+  gap_reason: string;
+  today_key_point: string;
+};
+
+const defaultReflection: LatestReflection = {
+  gap_reason: 'きょうの振り返りはまだありません。',
+  today_key_point: 'きょうも一日、無理せずいきましょう。',
+};
+
+async function getLatestReflection(): Promise<LatestReflection> {
   try {
     const cookieStore = await cookies();
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/reflection/latest`, {
-      cache: 'no-store',
-      headers: {
-        Cookie: cookieStore.toString(),
+
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1/reflection/latest`,
+      {
+        cache: 'no-store',
+        headers: {
+          Cookie: cookieStore.toString(),
+        },
       },
-    });
+    );
 
     if (!res.ok) {
-      return 'きょうも一日、無理せずいきましょう。';
+      return defaultReflection;
     }
 
     const data = await res.json();
-    return data.today_key_point || 'きょうも一日、無理せずいきましょう。';
+
+    return {
+      gap_reason: data.gap_reason || defaultReflection.gap_reason,
+      today_key_point:
+        data.today_key_point || defaultReflection.today_key_point,
+    };
   } catch (error) {
-    return 'きょうも一日、無理せずいきましょう。';
+    return defaultReflection;
   }
 }
 
 export default async function MorningPage() {
-  const todayKeyPoint = await getTodayKeyPoint();
+  const reflection = await getLatestReflection();
 
   return (
     <>
@@ -40,14 +59,19 @@ export default async function MorningPage() {
         <header className="day-head">
           <div>
             <h1>おはようございます</h1>
-            <p className="morning-date"><Clock /></p>
+            <p className="morning-date">
+              <Clock />
+            </p>
           </div>
           <HeaderIcons />
         </header>
 
         <div className="rows">
           {rows.map((r) => (
-            <div key={r.time} className={`rowcard${r.gold ? ' gold' : ''}`}>
+            <div
+              key={r.time}
+              className={`rowcard${r.gold ? ' gold' : ''}`}
+            >
               <span className="time">{r.time}</span>
               <span className="title">{r.title}</span>
               {r.moon && <MoonIcon size={16} color="#DDA84F" />}
@@ -55,10 +79,23 @@ export default async function MorningPage() {
           ))}
         </div>
 
-        <p className="advice">{todayKeyPoint}</p>
+        <section className="reflection-cards" aria-label="AIからの振り返り">
+          <article className="reflection-card">
+            <p className="reflection-label">昨日の予定との差が出た理由</p>
+            <p className="reflection-text">{reflection.gap_reason}</p>
+          </article>
 
-        <Link href="/sendoff" className="big-btn">きょうもがんばる！</Link>
+          <article className="reflection-card key-point-card">
+            <p className="reflection-label">きょうのポイント</p>
+            <p className="reflection-text">{reflection.today_key_point}</p>
+          </article>
+        </section>
+
+        <Link href="/sendoff" className="big-btn">
+          きょうもがんばる！
+        </Link>
       </main>
+
       <Footer />
     </>
   );
