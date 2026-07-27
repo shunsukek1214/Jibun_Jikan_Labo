@@ -507,7 +507,9 @@ export async function getTodaySchedule(
 ): Promise<ScheduleResponse | null> {
   try {
     const encodedDate = encodeURIComponent(targetDate);
-    const response = await apiFetch(`/api/v1/schedule?target_date=${encodedDate}`);
+    const response = await apiFetch(
+      `/api/v1/schedule?target_date=${encodedDate}`,
+    );
     return response.json();
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
@@ -549,4 +551,3 @@ export async function updateLineStatus(
   });
   return response.json();
 }
-

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useSyncExternalStore, type CSSProperties } from "react";
 import Link from "next/link";
 
 import { Footer } from "../../components";
@@ -28,6 +28,22 @@ function suggestByHour(hour: number): Suggest {
   return null;
 }
 
+function subscribeToClock(onStoreChange: () => void): () => void {
+  const intervalId = window.setInterval(onStoreChange, 60_000);
+
+  return () => {
+    window.clearInterval(intervalId);
+  };
+}
+
+function getClientSuggest(): Suggest {
+  return suggestByHour(new Date().getHours());
+}
+
+function getServerSuggest(): Suggest {
+  return null;
+}
+
 const badgeStyle: CSSProperties = {
   position: "absolute",
   top: 14,
@@ -42,11 +58,11 @@ const badgeStyle: CSSProperties = {
 };
 
 export default function StartPage() {
-  const [suggest, setSuggest] = useState<Suggest>(null);
-
-  useEffect(() => {
-    setSuggest(suggestByHour(new Date().getHours()));
-  }, []);
+  const suggest = useSyncExternalStore(
+    subscribeToClock,
+    getClientSuggest,
+    getServerSuggest,
+  );
 
   return (
     <>

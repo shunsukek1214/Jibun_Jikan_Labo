@@ -1,13 +1,13 @@
-import Link from 'next/link';
-import { cookies } from 'next/headers';
-import { Footer, HeaderIcons, MoonIcon } from '../../components';
-import { Clock } from '../../clock';
+import Link from "next/link";
+import { cookies } from "next/headers";
+import { Footer, HeaderIcons, MoonIcon } from "../../components";
+import { Clock } from "../../clock";
 
 const rows = [
-  { time: '9:00', title: 'A社見積もりの返信', moon: true, gold: true },
-  { time: '10:30', title: '企画会議' },
-  { time: '13:00', title: '1on1' },
-  { time: '15:00', title: '経費精算', moon: true },
+  { time: "9:00", title: "A社見積もりの返信", moon: true, gold: true },
+  { time: "10:30", title: "企画会議" },
+  { time: "13:00", title: "1on1" },
+  { time: "15:00", title: "経費精算", moon: true },
 ];
 
 type LatestReflection = {
@@ -62,6 +62,9 @@ export default async function MorningPage() {
             <p className="morning-date">
               <Clock />
             </p>
+            <p className="morning-date">
+              <Clock />
+            </p>
           </div>
           <HeaderIcons />
         </header>
@@ -91,6 +94,9 @@ export default async function MorningPage() {
           </article>
         </section>
 
+        <Link href="/sendoff" className="big-btn">
+          きょうもがんばる！
+        </Link>
         <Link href="/sendoff" className="big-btn">
           きょうもがんばる！
         </Link>
