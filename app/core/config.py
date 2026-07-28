@@ -73,7 +73,7 @@ class Settings(BaseSettings):
     internal_batch_token: str
 
     # APScheduler
-    scheduler_enabled: bool = True
+    scheduler_enabled: bool = False
     reminder_times: str = "07:00,10:00,13:00,15:00,17:00"
 
     @property
