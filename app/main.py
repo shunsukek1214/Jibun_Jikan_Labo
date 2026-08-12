@@ -32,6 +32,7 @@ app = FastAPI(
     version="0.2.0",
     lifespan=lifespan,
 
+
     # Swagger / ReDoc / OpenAPI を常に無効化
     docs_url=None,
     redoc_url=None,
