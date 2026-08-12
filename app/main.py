@@ -31,6 +31,12 @@ app = FastAPI(
     description="認証、Google Calendar、予定構造化、振り返り、LINE通知API",
     version="0.2.0",
     lifespan=lifespan,
+
+
+    # Swagger / ReDoc / OpenAPI を常に無効化
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
 )
 
 app.add_middleware(
